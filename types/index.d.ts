@@ -14,6 +14,8 @@ export type Note = {
   group?: string
   /** Kept at the top of its group while it is open. */
   pinned?: boolean
+  /** Place among its group's open notes, set by the up / down buttons; absent sorts first. */
+  order?: number
   /** Set on a note in the trash: when it was deleted. */
   trashedAt?: string
 }

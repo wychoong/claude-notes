@@ -17,7 +17,7 @@ claude plugin marketplace add wychoong/claude-notes
 claude plugin install notes@claude-notes
 ```
 
-The pane opens when a session starts. Reopen it any time with `/notes`.
+Open the pane with `/notes`.
 
 ## Features
 
@@ -31,6 +31,8 @@ The pane opens when a session starts. Reopen it any time with `/notes`.
   or create groups from the "Add to" picker, move a note from its ✏️ editor,
   and filter with the Show dropdown.
 - **Pins**: 📌 keeps an open note at the top of its group.
+- **Reorder**: ⬆️ / ⬇️ (on hover) move an open note within its group; the
+  order is saved in the note's frontmatter.
 - **Trash**: ✕ moves a note to the trash, where you can restore it or delete
   it for good.
 - **Settings**: optionally move completed notes to the trash after some

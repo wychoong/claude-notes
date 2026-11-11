@@ -85,6 +85,7 @@ export const parseNote = (id: string, raw: string, fallbackDate: string): Note =
   }
   if (meta.trashed) note.trashedAt = meta.trashed
   if (meta.pinned === 'true') note.pinned = true
+  if (meta.order !== undefined && /^\d+$/.test(meta.order)) note.order = Number(meta.order)
   return note
 }
 
@@ -92,6 +93,7 @@ export const serializeNote = (note: Note) => {
   const lines = ['---']
   if (note.group) lines.push(`group: ${quote(note.group)}`)
   if (note.pinned) lines.push('pinned: true')
+  if (note.order !== undefined) lines.push(`order: ${note.order}`)
   lines.push(`created: ${note.at}`)
   if (note.updatedAt) lines.push(`updated: ${note.updatedAt}`)
   if (note.done) lines.push(`done: ${note.doneAt ?? new Date().toISOString()}`)

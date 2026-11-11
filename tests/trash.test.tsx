@@ -123,3 +123,33 @@ test('💬 copies the note when the message box takes no draft', async ($, on) =
   expect(copied).toEqual(['# Plan'])
   await ui.unmount()
 })
+
+test('⬆️ / ⬇️ reorder open notes and the order is kept in the files', async ($, on) => {
+  const { files } = engine(on, '/p/demo')
+  const note = (title: string, created: string) =>
+    `---\ngroup: demo\ncreated: ${created}\n---\n\n# ${title}\n`
+  files.set(`${ROOT}/notes/a.md`, note('A', daysAgo(1)))
+  files.set(`${ROOT}/notes/b.md`, note('B', daysAgo(2)))
+  files.set(`${ROOT}/notes/c.md`, note('C', daysAgo(3)))
+
+  await $.session.start({ cwd: '/p/demo', surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  // Newest first: A, B, C. The first has no ⬆️, the last no ⬇️.
+  expect(await ui.find({ key: 'up-a' })).toBeUndefined()
+  expect(await ui.find({ key: 'down-c' })).toBeUndefined()
+
+  await ui.press({ key: 'down-a' })
+  // Now B, A, C: B has no ⬆️, A has both.
+  expect(files.get(`${ROOT}/notes/b.md`)).toContain('order: 0')
+  expect(files.get(`${ROOT}/notes/a.md`)).toContain('order: 1')
+  expect(files.get(`${ROOT}/notes/c.md`)).toContain('order: 2')
+  expect(files.get(`${ROOT}/notes/a.md`)).not.toContain('updated:')
+  expect(await ui.find({ key: 'up-b' })).toBeUndefined()
+  expect(await ui.find({ key: 'up-a' })).toBeDefined()
+
+  await ui.press({ key: 'down-a' })
+  expect(files.get(`${ROOT}/notes/c.md`)).toContain('order: 1')
+  expect(files.get(`${ROOT}/notes/a.md`)).toContain('order: 2')
+  expect(await ui.find({ key: 'down-a' })).toBeUndefined()
+  await ui.unmount()
+})

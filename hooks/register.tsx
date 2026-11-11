@@ -403,7 +403,6 @@ export const register: Register = on => {
       name: 'note-this',
       description: 'Save the highlighted chat text (or the text you type) as a note',
     })
-    void $.ui.open({ id: PANE, title: 'Notes' })
 
     return next(e)
   })
@@ -493,7 +492,19 @@ export const register: Register = on => {
       </Box>
     )
 
-    const row = (note: Note) => {
+    // Swaps a note with its neighbour among `set` (the open notes it sorts
+    // with), then numbers the whole set so the order is kept in the files.
+    const move = async (set: readonly Note[], index: number, step: -1 | 1) => {
+      const to = index + step
+      if (to < 0 || to >= set.length) return
+      const next = [...set]
+      ;[next[index], next[to]] = [next[to]!, next[index]!]
+      for (const [i, n] of next.entries()) {
+        if (n.order !== i) await patch(n.id, x => ({ ...x, order: i }))
+      }
+    }
+
+    const row = (note: Note, place?: { set: readonly Note[]; index: number }) => {
       if (note.id === editingId) return editor(note)
       const { heading, content, hasBody, taskCount, taskDone } = split(note.text)
       const isOpen = hasBody && openIds.includes(note.id)
@@ -571,6 +582,32 @@ export const register: Register = on => {
                   onPress={() => void dropNotes($, [note.id])}
                 />
               </Box>
+              {/* Reorder, on hover: open notes, within pinned or unpinned. */}
+              {place && place.set.length > 1 && (
+                <Box
+                  flexShrink={0}
+                  flexDirection="row"
+                  display={e.surface === 'terminal' ? 'flex' : 'none'}
+                  hover={e.surface === 'terminal' ? undefined : { display: 'flex' }}
+                >
+                  {place.index > 0 && (
+                    <Button
+                      key={`up-${note.id}`}
+                      label="⬆️"
+                      plain
+                      onPress={() => void move(place.set, place.index, -1)}
+                    />
+                  )}
+                  {place.index < place.set.length - 1 && (
+                    <Button
+                      key={`down-${note.id}`}
+                      label="⬇️"
+                      plain
+                      onPress={() => void move(place.set, place.index, 1)}
+                    />
+                  )}
+                </Box>
+              )}
               {/* On hover too, like ✕. */}
               <Box
                 flexShrink={0}
@@ -680,8 +717,14 @@ export const register: Register = on => {
     const sections = (isAll ? allGroups : allGroups.filter(g => shown.includes(g)))
       .map(g => {
         const items = list.filter(n => groupOf(n) === g)
-        // Pinned notes first among the open ones; the sort keeps the rest in order.
-        const open = items.filter(n => !n.done).sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned))
+        // Pinned first; then by the order ⬆️ / ⬇️ set, notes without one
+        // (new ones) first; the sort keeps the rest newest first.
+        const open = items
+          .filter(n => !n.done)
+          .sort(
+            (a, b) =>
+              Number(!!b.pinned) - Number(!!a.pinned) || (a.order ?? -1) - (b.order ?? -1),
+          )
         return { group: g, open, done: items.filter(n => n.done) }
       })
       .filter(s => !isAll || s.open.length + s.done.length > 0)
@@ -800,7 +843,10 @@ export const register: Register = on => {
                 Nothing open.
               </Text>
             )}
-            {s.open.map(row)}
+            {s.open.map(n => {
+              const set = s.open.filter(x => !!x.pinned === !!n.pinned)
+              return row(n, { set, index: set.indexOf(n) })
+            })}
             {s.done.length > 0 && (
               <Box
                 flexDirection="row"
@@ -822,7 +868,7 @@ export const register: Register = on => {
                 />
               </Box>
             )}
-            {s.done.map(row)}
+            {s.done.map(n => row(n))}
           </Box>
         ))}
         <Box flexDirection="row" justifyContent="space-between" marginTop="md">
