@@ -1,0 +1,13 @@
+{
+  "name": "claude-notes",
+  "description": "A note-taking pane for Claude Code",
+  "owner": {
+    "name": "wychoong"
+  },
+  "plugins": [
+    {
+      "name": "notes",
+      "source": "./"
+    }
+  ]
+}

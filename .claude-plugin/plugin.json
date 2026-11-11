@@ -1,0 +1,9 @@
+{
+  "name": "notes",
+  "version": "0.1.0",
+  "description": "A note-taking pane beside the chat: markdown notes with to-dos, groups, pins and a trash",
+  "author": { "name": "wychoong" },
+  "license": "MIT",
+  "repository": "https://github.com/wychoong/claude-notes",
+  "types": "./types/index.d.ts"
+}
