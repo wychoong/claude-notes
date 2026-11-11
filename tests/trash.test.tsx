@@ -87,3 +87,39 @@ test('a pinned open note sorts to the top of its group; done notes do not', asyn
   expect(await ui.find({ key: 'pin-older' })).toBeUndefined()
   await ui.unmount()
 })
+
+test('💬 puts the note into the message box, without checklist dates', async ($, on) => {
+  const { files } = engine(on, '/p/demo')
+  files.set(
+    `${ROOT}/notes/plan.md`,
+    `---\ngroup: demo\ncreated: ${daysAgo(1)}\n---\n\n# Plan\n- [x] ship ➕ 2026-11-10 ✅ 2026-11-11\n`,
+  )
+  const filled: string[] = []
+  on('prompt.fill', (_, e) => {
+    filled.push(e.text)
+    return { isFilled: true }
+  })
+
+  await $.session.start({ cwd: '/p/demo', surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'chat-plan' })
+  expect(filled).toEqual(['# Plan\n- [x] ship\n'])
+  await ui.unmount()
+})
+
+test('💬 copies the note when the message box takes no draft', async ($, on) => {
+  const { files } = engine(on, '/p/demo')
+  files.set(`${ROOT}/notes/plan.md`, `---\ngroup: demo\ncreated: ${daysAgo(1)}\n---\n\n# Plan\n`)
+  on('prompt.fill', () => ({ isFilled: false }))
+  const copied: string[] = []
+  on('ui.copy', (_, e) => {
+    copied.push(e.text)
+    return { value: { isCopied: true } }
+  })
+
+  await $.session.start({ cwd: '/p/demo', surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'chat-plan' })
+  expect(copied).toEqual(['# Plan'])
+  await ui.unmount()
+})

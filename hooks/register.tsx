@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, RenderSurface } from 'claude-code'
 
 import type { Note } from '../types'
 import {
@@ -16,6 +16,7 @@ import {
   saveGroups,
   saveSettings,
   stampTasks,
+  stripTaskDates,
   taskMarks,
   trashNote,
   writeNote,
@@ -247,6 +248,19 @@ const migrate = async ($: EngineInterface) => {
     await saveGroups($, [...new Set([...(await loadGroups($)), ...(oldGroups as string[])])])
   }
   await $.store.set(MIGRATED_KEY, true)
+}
+
+// Puts a note's text into the message box at the cursor. Where the surface
+// can't take a draft, copies it instead so the person can paste it.
+const sendToChat = async ($: EngineInterface, note: Note, surface: RenderSurface) => {
+  const text = stripTaskDates(note.text)
+  const filled = await $.prompt.fill({ text: `${text}\n`, mode: 'insert' })
+  if (filled.isFilled) {
+    $.ui.toast('Added to your message')
+    return
+  }
+  const copied = await $.ui.copy({ text, surface })
+  $.ui.toast(copied.isCopied ? 'Copied: paste it into the message box' : "Couldn't add the note to the chat")
 }
 
 // Adds what the person highlighted in the chat; false when nothing is.
@@ -557,6 +571,20 @@ export const register: Register = on => {
                   onPress={() => void dropNotes($, [note.id])}
                 />
               </Box>
+              {/* On hover too, like ✕. */}
+              <Box
+                flexShrink={0}
+                display={e.surface === 'terminal' ? 'flex' : 'none'}
+                hover={e.surface === 'terminal' ? undefined : { display: 'flex' }}
+              >
+                <Button
+                  key={`chat-${note.id}`}
+                  label="💬"
+                  plain
+                  dimColor
+                  onPress={press => void sendToChat($, note, press.surface)}
+                />
+              </Box>
               {/* Pin: open notes only. Shown while pinned; else on hover
                   (always in the terminal, which has no pointer). */}
               {!note.done && (
@@ -577,7 +605,7 @@ export const register: Register = on => {
               <Box flexShrink={0}>
                 <Button
                   key={`edit-btn-${note.id}`}
-                  label="✎"
+                  label="✏️"
                   plain
                   dimColor
                   onPress={() => void update($, editing, () => note.id)}

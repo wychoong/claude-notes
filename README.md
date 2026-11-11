@@ -28,7 +28,7 @@ The pane opens when a session starts. Reopen it any time with `/notes`.
   `✅ YYYY-MM-DD` when ticked.
 - **To-dos**: check off a note to move it to its group's Completed list.
 - **Groups**: new notes go to a group named after the project folder. Switch
-  or create groups from the "Add to" picker, move a note from its ✎ editor,
+  or create groups from the "Add to" picker, move a note from its ✏️ editor,
   and filter with the Show dropdown.
 - **Pins**: 📌 keeps an open note at the top of its group.
 - **Trash**: ✕ moves a note to the trash, where you can restore it or delete

@@ -114,6 +114,13 @@ export const today = () => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+/** The text with every checklist item's ➕ / ✅ date marks taken out. */
+export const stripTaskDates = (text: string) =>
+  text
+    .split('\n')
+    .map(line => (TASK.test(line) ? line.replace(ADDED, '').replace(DONE, '') : line))
+    .join('\n')
+
 /** A checklist item's words without its date marks, and those dates. */
 export const taskMarks = (text: string) => ({
   label: text.replace(ADDED, '').replace(DONE, '').trim(),
