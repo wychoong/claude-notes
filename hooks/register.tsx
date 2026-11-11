@@ -46,6 +46,16 @@ const isCreating = atom({ plugin: 'notes', key: 'isCreating' } as const, false)
 // Ids of the notes whose cards are open, showing the whole body.
 const expanded = atom({ plugin: 'notes', key: 'expanded' } as const, [])
 const trash = atom({ plugin: 'notes', key: 'trash' } as const, [], { shape: 'trash-1' })
+// Folded group and Completed sections, kept in the plugin's store so they
+// stay folded in later sessions.
+const COLLAPSED_KEY = 'collapsed'
+const collapsed = atom({ plugin: 'notes', key: 'collapsed' } as const, [])
+
+const toggleCollapsed = async ($: EngineInterface, id: string) => {
+  await update($, collapsed, l => (l.includes(id) ? l.filter(x => x !== id) : [...l, id]))
+  await $.store.set(COLLAPSED_KEY, await read($, collapsed))
+}
+
 const view = atom({ plugin: 'notes', key: 'view' } as const, 'notes')
 const settings = atom({ plugin: 'notes', key: 'settings' } as const, DEFAULT_SETTINGS)
 // The id of the note being edited in place, or null.
@@ -393,6 +403,10 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await migrate($)
     await reload($)
+    const folded = await $.store.get(COLLAPSED_KEY)
+    if (Array.isArray(folded)) {
+      await update($, collapsed, () => folded.filter((x): x is string => typeof x === 'string'))
+    }
     const folder = basename(await $.session.cwd())
     await update($, project, () => folder)
     await $.command.register({
@@ -439,6 +453,7 @@ export const register: Register = on => {
     if (screen === 'trash') return trashScreen($, e, await read($, trash))
     if (screen === 'settings') return settingsScreen($, e, await read($, settings))
     const trashCount = (await read($, trash)).length
+    const folded = await read($, collapsed)
     const projectName = (await read($, project)) ?? FALLBACK_GROUP
     const target = await currentGroup($)
 
@@ -833,30 +848,46 @@ export const register: Register = on => {
         </Box>
 
         {sections.length === 0 && <Text dimColor>Nothing yet.</Text>}
-        {sections.map(s => (
+        {sections.map(s => {
+          const isGroupOpen = !folded.includes(`group:${s.group}`)
+          // Completed lists start folded; `done-open:` marks one unfolded.
+          const isDoneOpen = folded.includes(`done-open:${s.group}`)
+          return (
           <Box key={`group-${s.group}`} flexDirection="column" gap="xs" marginTop="sm">
-            <Text size="caption" weight="semibold" dimColor>
-              {s.group.toUpperCase()} · {s.open.length}
-            </Text>
-            {s.open.length === 0 && (
+            <Box flexDirection="row">
+              <Button
+                key={`fold-group-${s.group}`}
+                label={`${isGroupOpen ? '▼\uFE0E' : '▶\uFE0E'} ${s.group.toUpperCase()} · ${s.open.length}${
+                  !isGroupOpen && s.done.length > 0 ? ` (+${s.done.length} done)` : ''
+                }`}
+                plain
+                dimColor
+                onPress={() => void toggleCollapsed($, `group:${s.group}`)}
+              />
+            </Box>
+            {isGroupOpen && s.open.length === 0 && (
               <Text size="footnote" dimColor>
                 Nothing open.
               </Text>
             )}
-            {s.open.map(n => {
+            {isGroupOpen && s.open.map(n => {
               const set = s.open.filter(x => !!x.pinned === !!n.pinned)
               return row(n, { set, index: set.indexOf(n) })
             })}
-            {s.done.length > 0 && (
+            {isGroupOpen && s.done.length > 0 && (
               <Box
                 flexDirection="row"
                 justifyContent="space-between"
                 alignItems="center"
                 marginTop="xs"
               >
-                <Text size="caption" dimColor>
-                  Completed · {s.done.length}
-                </Text>
+                <Button
+                  key={`fold-done-${s.group}`}
+                  label={`${isDoneOpen ? '▼\uFE0E' : '▶\uFE0E'} Completed · ${s.done.length}`}
+                  plain
+                  dimColor
+                  onPress={() => void toggleCollapsed($, `done-open:${s.group}`)}
+                />
                 <Button
                   key={`clear-${s.group}`}
                   label="Clear"
@@ -868,9 +899,10 @@ export const register: Register = on => {
                 />
               </Box>
             )}
-            {s.done.map(n => row(n))}
+            {isGroupOpen && isDoneOpen && s.done.map(n => row(n))}
           </Box>
-        ))}
+          )
+        })}
         <Box flexDirection="row" justifyContent="space-between" marginTop="md">
           <Button
             key="open-trash"

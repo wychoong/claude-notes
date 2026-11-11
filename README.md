@@ -29,7 +29,9 @@ Open the pane with `/notes`.
 - **To-dos**: check off a note to move it to its group's Completed list.
 - **Groups**: new notes go to a group named after the project folder. Switch
   or create groups from the "Add to" picker, move a note from its ✏️ editor,
-  and filter with the Show dropdown.
+  and filter with the Show dropdown. Click a group's heading to fold it.
+  Each group's Completed list starts folded; click its heading to open it.
+  Folds are remembered.
 - **Pins**: 📌 keeps an open note at the top of its group.
 - **Reorder**: ⬆️ / ⬇️ (on hover) move an open note within its group; the
   order is saved in the note's frontmatter.

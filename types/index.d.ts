@@ -39,6 +39,8 @@ declare module 'claude-code' {
       editing: string | null
       /** Notes in the trash folder. */
       trash: Shaped<Note[]>
+      /** Folded groups as `group:<name>`; unfolded Completed lists (folded by default) as `done-open:<name>`. */
+      collapsed: string[]
       /** Which screen the pane shows. */
       view: 'notes' | 'trash' | 'settings'
       /** The pane's settings, as in settings.json. */

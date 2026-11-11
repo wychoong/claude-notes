@@ -153,3 +153,32 @@ test('⬆️ / ⬇️ reorder open notes and the order is kept in the files', as
   expect(await ui.find({ key: 'down-a' })).toBeUndefined()
   await ui.unmount()
 })
+
+test('Completed starts folded; it and the group fold and stay so', async ($, on) => {
+  const { files, store } = engine(on, '/p/demo')
+  const note = (title: string, extra = '') =>
+    `---\ngroup: demo\ncreated: ${daysAgo(1)}\n${extra}---\n\n# ${title}\n`
+  files.set(`${ROOT}/notes/open.md`, note('Open one'))
+  files.set(`${ROOT}/notes/done.md`, note('Done one', `done: ${daysAgo(1)}\n`))
+
+  await $.session.start({ cwd: '/p/demo', surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: 'Open one' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: 'Done one' })).toBeUndefined()
+  expect((await ui.find({ key: 'fold-done-demo' }))?.text).toContain('Completed · 1')
+
+  await ui.press({ key: 'fold-done-demo' })
+  expect(await ui.find({ type: 'Text', text: 'Done one' })).toBeDefined()
+  expect(store.get('collapsed')).toEqual(['done-open:demo'])
+
+  await ui.press({ key: 'fold-group-demo' })
+  expect(await ui.find({ type: 'Text', text: 'Open one' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: 'Done one' })).toBeUndefined()
+  expect((await ui.find({ key: 'fold-group-demo' }))?.text).toContain('(+1 done)')
+
+  await ui.press({ key: 'fold-group-demo' })
+  await ui.press({ key: 'fold-done-demo' })
+  expect(await ui.find({ type: 'Text', text: 'Done one' })).toBeUndefined()
+  expect(store.get('collapsed')).toEqual([])
+  await ui.unmount()
+})
