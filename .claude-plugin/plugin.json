@@ -1,6 +1,6 @@
 {
   "name": "notes",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A note-taking pane beside the chat: markdown notes with to-dos, groups, pins and a trash",
   "author": { "name": "wychoong" },
   "license": "MIT",

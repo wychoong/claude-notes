@@ -654,7 +654,12 @@ export const register: Register = on => {
                   />
                 </Box>
               )}
-              <Box flexShrink={0}>
+              {/* Edit: on hover too, like ✕. */}
+              <Box
+                flexShrink={0}
+                display={e.surface === 'terminal' ? 'flex' : 'none'}
+                hover={e.surface === 'terminal' ? undefined : { display: 'flex' }}
+              >
                 <Button
                   key={`edit-btn-${note.id}`}
                   label="✏️"
